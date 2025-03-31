@@ -1,78 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   Tooltip,
-  useTheme,
   Button,
-  Typography as MuiTypography,
+  IconButton,
   Box,
   Card,
   CardContent,
   Checkbox,
-  Chip,
   Typography,
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Menu,
+  MenuItem,
+  LinearProgress,
+  Collapse
 } from '@mui/material';
 import { 
+  MoreHoriz as MoreHorizIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
-  AccessTime as TimeIcon,
-  MoreHoriz as MoreHorizIcon
+  Event as StartDateIcon,
+  EventAvailable as DueDateIcon,
+  NotificationsActive as NotificationIcon
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useDispatch } from 'react-redux';
-import { toggleTaskCompletion, toggleSubtaskCompletion } from '../store/tasksSlice';
-
-// Add a custom Typography component that can expand/collapse
-const ExpandableTypography = ({ text, maxLines = 2, variant = "body2", color = "text.secondary" }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [needsExpand, setNeedsExpand] = useState(false);
-  const textRef = useRef(null);
-
-  useEffect(() => {
-    if (textRef.current) {
-      // Check if the text is overflowing
-      const isOverflowing = textRef.current.scrollHeight > textRef.current.clientHeight;
-      setNeedsExpand(isOverflowing);
-    }
-  }, [text]);
-
-  return (
-    <Box>
-      <MuiTypography
-        ref={textRef}
-        variant={variant}
-        color={color}
-        sx={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: expanded ? 'unset' : maxLines,
-          WebkitBoxOrient: 'vertical',
-          transition: 'all 0.3s ease',
-        }}
-      >
-        {text}
-      </MuiTypography>
-      
-      {needsExpand && (
-        <Button 
-          size="small" 
-          onClick={() => setExpanded(!expanded)} 
-          sx={{ p: 0, minWidth: 'auto', mt: 0.5 }}
-        >
-          {expanded ? "Show less" : "Show more"}
-        </Button>
-      )}
-    </Box>
-  );
-};
+import { toggleTaskCompletion, toggleSubtaskCompletion, deleteTask } from '../store/tasksSlice';
 
 const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) => {
   const priorityColor = task.priority === "high" ? "red" : task.priority === "medium" ? "orange" : "green";
-  const isActive = task.status === "active";
   const dispatch = useDispatch();
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [subtasksVisible, setSubtasksVisible] = useState(false);
 
   const handleToggleComplete = () => {
     dispatch(toggleTaskCompletion(task.id));
@@ -82,7 +44,10 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
     dispatch(toggleSubtaskCompletion({ taskId: task.id, subtaskId }));
   };
 
-  // Calculate progress
+  const handleDelete = () => {
+    dispatch(deleteTask(task.id));
+  };
+
   const progress = task.subtasks && task.subtasks.length > 0
     ? (task.subtasks.filter(st => st.completed).length / task.subtasks.length) * 100
     : task.completed ? 100 : 0;
@@ -109,8 +74,8 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
       onDragOver={(e) => e.preventDefault()}
     >
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
             <Checkbox 
               checked={task.completed}
               onChange={handleToggleComplete}
@@ -119,91 +84,108 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
                 '&.Mui-checked': {
                   color: priorityColor,
                 },
-                mt: -0.5
               }}
             />
-            <Box>
-              <ExpandableTypography 
-                text={task.title}
-                variant="h6"
-                color={task.completed ? 'text.secondary' : 'text.primary'}
-                maxLines={2}
-                sx={{ 
-                  textDecoration: task.completed ? 'line-through' : 'none',
-                }}
-              />
+            <Box sx={{ overflow: 'hidden' }}>
+              <Typography variant="h6" color={task.completed ? 'text.secondary' : 'text.primary'}>
+                {task.title}
+              </Typography>
+              {task.description && (
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    mt: 1,
+                    wordWrap: 'break-word',
+                    whiteSpace: 'pre-wrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical'
+                  }}
+                >
+                  {task.description}
+                </Typography>
+              )}
+              
+              {(task.startDate || task.dueDate) && (
+                <Box sx={{ mt: 1 }}>
+                  {task.startDate && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <StartDateIcon fontSize="small" color="action" />
+                      <Typography variant="caption" color="text.secondary">
+                        {dayjs(task.startDate).format('DD MMM YYYY')}
+                      </Typography>
+                    </Box>
+                  )}
+                  {task.dueDate && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                      <DueDateIcon fontSize="small" color="action" />
+                      <Typography variant="caption" color="text.secondary">
+                        {dayjs(task.dueDate).format('DD MMM YYYY')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              )}
+              
+              {task.notification && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <NotificationIcon fontSize="small" color="primary" />
+                  <Typography variant="caption" color="primary">
+                    {dayjs(task.notification).format('DD MMM HH:mm')}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Box>
-          
-          {isActive && (
-            <Chip 
-              icon={<TimeIcon />} 
-              label="Active" 
-              size="small" 
-              color="success" 
-              variant="outlined"
-              sx={{ ml: 1, flexShrink: 0 }}
-            />
-          )}
+          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
+            <MoreHorizIcon />
+          </IconButton>
         </Box>
-        
-        <Box sx={{ mt: 1, pl: 4 }}>
-          <ExpandableTypography text={task.description} maxLines={3} />
-        </Box>
-        
-        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', pl: 4 }}>
-          <Chip 
-            label={task.category.charAt(0).toUpperCase() + task.category.slice(1)} 
-            size="small" 
-            variant="outlined"
-          />
-          <Chip 
-            label={task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} 
-            size="small"
-            sx={{ 
-              bgcolor: priorityColor,
-              color: 'white',
-            }}
-          />
-        </Box>
-        
-        <Box sx={{ mt: 2, pl: 4 }}>
-          <Typography variant="caption" display="block" color="text.secondary">
-            Due: {dayjs(task.dueDate).format('MMM D, YYYY')}
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={() => setMenuAnchor(null)}
+        >
+          <MenuItem onClick={() => { setMenuAnchor(null); onEdit(task); }}>
+            <EditIcon fontSize="small" sx={{ mr: 1 }} /> Edit
+          </MenuItem>
+          <MenuItem onClick={handleDelete} sx={{ color: 'red' }}>
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete
+          </MenuItem>
+        </Menu>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Progress: {Math.round(progress)}%
           </Typography>
+          <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
         </Box>
-        
-        {/* Subtasks Section */}
         {task.subtasks && task.subtasks.length > 0 && (
-          <Box sx={{ mt: 2, pl: 4 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Subtasks ({task.subtasks.filter(st => st.completed).length}/{task.subtasks.length})
-            </Typography>
-            <List dense disablePadding>
-              {task.subtasks.map(subtask => (
-                <ListItem key={subtask.id} disablePadding sx={{ py: 0.5 }}>
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <Checkbox
-                      edge="start"
-                      checked={subtask.completed}
-                      onChange={() => handleToggleSubtaskComplete(subtask.id)}
-                      size="small"
-                      sx={{ color: priorityColor, '&.Mui-checked': { color: priorityColor } }}
-                    />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={subtask.title}
-                    sx={{ 
-                      '& .MuiListItemText-primary': { 
-                        textDecoration: subtask.completed ? 'line-through' : 'none',
-                        color: subtask.completed ? 'text.secondary' : 'text.primary',
-                      }
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
+          <>
+            <Button 
+              onClick={() => setSubtasksVisible(!subtasksVisible)}
+              endIcon={<ExpandMoreIcon sx={{ transform: subtasksVisible ? 'rotate(180deg)' : 'rotate(0deg)' }} />}
+              sx={{ textTransform: 'none', mt: 1 }}
+            >
+              Subtasks ({task.subtasks.length})
+            </Button>
+            <Collapse in={subtasksVisible}>
+              <List>
+                {task.subtasks.map((subtask) => (
+                  <ListItem key={subtask.id} sx={{ pl: 0 }}>
+                    <ListItemIcon>
+                      <Checkbox
+                        checked={subtask.completed}
+                        onChange={() => handleToggleSubtaskComplete(subtask.id)}
+                      />
+                    </ListItemIcon>
+                    <ListItemText primary={subtask.title} sx={{ textDecoration: subtask.completed ? 'line-through' : 'none' }} />
+                  </ListItem>
+                ))}
+              </List>
+            </Collapse>
+          </>
         )}
       </CardContent>
     </Card>
