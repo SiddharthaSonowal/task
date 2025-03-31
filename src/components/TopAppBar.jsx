@@ -26,6 +26,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
 import CategoryIcon from '@mui/icons-material/Category';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import HomeIcon from '@mui/icons-material/Home';
 import TaskFormDialog from './TaskFormDialog';
 
 const TopAppBar = ({ 
@@ -41,6 +42,17 @@ const TopAppBar = ({
   const categories = useSelector(state => state.tasks.categories);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const handleHomeClick = () => {
+    // Reset all filters and sorting to default values
+    setFilterCategory('all');
+    setFilterStatus('all');
+    setSortBy('dueDate');
+    // Close drawer if open
+    if (drawerOpen) {
+      setDrawerOpen(false);
+    }
+  };
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -62,6 +74,17 @@ const TopAppBar = ({
             <FilterListIcon />
           </ListItemIcon>
           <ListItemText primary="Filters & Sorting" />
+        </ListItemButton>
+      </List>
+      
+      <Divider />
+      
+      <List>
+        <ListItemButton onClick={handleHomeClick}>
+          <ListItemIcon>
+            <HomeIcon />
+          </ListItemIcon>
+          <ListItemText primary="Home" />
         </ListItemButton>
       </List>
       
@@ -181,7 +204,21 @@ const TopAppBar = ({
     <>
       <AppBar position="sticky">
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              '&:hover': {
+                opacity: 0.8
+              }
+            }}
+            onClick={handleHomeClick}
+          >
+            <HomeIcon sx={{ mr: 1 }} />
             Task Manager
           </Typography>
           

@@ -9,7 +9,11 @@ import {
   CardContent,
   Checkbox,
   Chip,
-  Typography
+  Typography,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -17,6 +21,8 @@ import {
   MoreHoriz as MoreHorizIcon
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import { useDispatch } from 'react-redux';
+import { toggleTaskCompletion, toggleSubtaskCompletion } from '../store/tasksSlice';
 
 // Add a custom Typography component that can expand/collapse
 const ExpandableTypography = ({ text, maxLines = 2, variant = "body2", color = "text.secondary" }) => {
@@ -66,10 +72,20 @@ const ExpandableTypography = ({ text, maxLines = 2, variant = "body2", color = "
 const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) => {
   const priorityColor = task.priority === "high" ? "red" : task.priority === "medium" ? "orange" : "green";
   const isActive = task.status === "active";
+  const dispatch = useDispatch();
 
   const handleToggleComplete = () => {
-    // Function to toggle task completion
+    dispatch(toggleTaskCompletion(task.id));
   };
+
+  const handleToggleSubtaskComplete = (subtaskId) => {
+    dispatch(toggleSubtaskCompletion({ taskId: task.id, subtaskId }));
+  };
+
+  // Calculate progress
+  const progress = task.subtasks && task.subtasks.length > 0
+    ? (task.subtasks.filter(st => st.completed).length / task.subtasks.length) * 100
+    : task.completed ? 100 : 0;
 
   return (
     <Card 
@@ -157,7 +173,38 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
           </Typography>
         </Box>
         
-        {/* ... rest of the existing component */}  
+        {/* Subtasks Section */}
+        {task.subtasks && task.subtasks.length > 0 && (
+          <Box sx={{ mt: 2, pl: 4 }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Subtasks ({task.subtasks.filter(st => st.completed).length}/{task.subtasks.length})
+            </Typography>
+            <List dense disablePadding>
+              {task.subtasks.map(subtask => (
+                <ListItem key={subtask.id} disablePadding sx={{ py: 0.5 }}>
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <Checkbox
+                      edge="start"
+                      checked={subtask.completed}
+                      onChange={() => handleToggleSubtaskComplete(subtask.id)}
+                      size="small"
+                      sx={{ color: priorityColor, '&.Mui-checked': { color: priorityColor } }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={subtask.title}
+                    sx={{ 
+                      '& .MuiListItemText-primary': { 
+                        textDecoration: subtask.completed ? 'line-through' : 'none',
+                        color: subtask.completed ? 'text.secondary' : 'text.primary',
+                      }
+                    }}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

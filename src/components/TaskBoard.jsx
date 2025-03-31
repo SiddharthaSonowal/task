@@ -205,11 +205,10 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
             <Box 
               key={category}
               sx={{ 
-                minWidth: '300px',
-                maxWidth: '320px',
+                minWidth: '250px',
+                maxWidth: '350px',
                 bgcolor: 'background.paper',
                 borderRadius: 1,
-                boxShadow: 2,
                 p: 2,
               }}
             >
