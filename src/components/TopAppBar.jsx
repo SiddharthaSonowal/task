@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   AppBar, 
   Toolbar, 
   Typography, 
   Button, 
   FormControl, 
+  InputLabel,
   Select, 
   MenuItem, 
-  InputLabel,
   Box,
   useMediaQuery,
   useTheme,
@@ -17,17 +18,20 @@ import {
   ListItemButton,
   ListItemText,
   ListItemIcon,
-  Divider
+  Divider,
+  Chip
 } from '@mui/material';
-import { useSelector } from 'react-redux';
-import AddIcon from '@mui/icons-material/Add';
-import MenuIcon from '@mui/icons-material/Menu';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import SortIcon from '@mui/icons-material/Sort';
-import CategoryIcon from '@mui/icons-material/Category';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import HomeIcon from '@mui/icons-material/Home';
+import { 
+  Add as AddIcon,
+  Menu as MenuIcon,
+  FilterList as FilterListIcon,
+  Sort as SortIcon,
+  Category as CategoryIcon,
+  AssignmentTurnedIn as AssignmentTurnedInIcon,
+  Home as HomeIcon
+} from '@mui/icons-material';
 import TaskFormDialog from './TaskFormDialog';
+import { categoryColors, priorityColors } from '../store/tasksSlice';
 
 const TopAppBar = ({ 
   filterCategory, 
@@ -40,18 +44,15 @@ const TopAppBar = ({
   const [openTaskForm, setOpenTaskForm] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const categories = useSelector(state => state.tasks.categories);
+  const priorities = useSelector(state => state.tasks.priorities);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleHomeClick = () => {
-    // Reset all filters and sorting to default values
     setFilterCategory('all');
     setFilterStatus('all');
     setSortBy('dueDate');
-    // Close drawer if open
-    if (drawerOpen) {
-      setDrawerOpen(false);
-    }
+    if (drawerOpen) setDrawerOpen(false);
   };
 
   const toggleDrawer = (open) => (event) => {
@@ -103,7 +104,7 @@ const TopAppBar = ({
           onClick={() => setFilterCategory('all')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="All" />
+          <ListItemText primary="ALL" />
         </ListItemButton>
         
         {categories.map(category => (
@@ -113,9 +114,19 @@ const TopAppBar = ({
             onClick={() => setFilterCategory(category)}
             sx={{ pl: 4 }}
           >
-            <ListItemText 
-              primary={category.charAt(0).toUpperCase() + category.slice(1)} 
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <Box sx={{
+                width: 10,
+                height: 10,
+                backgroundColor: categoryColors[category] || categoryColors.default,
+                borderRadius: '50%',
+                mr: 2
+              }} />
+              <ListItemText 
+                primary={category.toUpperCase()}
+                sx={{ color: categoryColors[category] || categoryColors.default }}
+              />
+            </Box>
           </ListItemButton>
         ))}
       </List>
@@ -135,7 +146,7 @@ const TopAppBar = ({
           onClick={() => setFilterStatus('all')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="All" />
+          <ListItemText primary="ALL" />
         </ListItemButton>
         
         <ListItemButton 
@@ -143,7 +154,7 @@ const TopAppBar = ({
           onClick={() => setFilterStatus('active')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="Active" />
+          <ListItemText primary="ACTIVE" />
         </ListItemButton>
         
         <ListItemButton 
@@ -151,7 +162,7 @@ const TopAppBar = ({
           onClick={() => setFilterStatus('completed')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="Completed" />
+          <ListItemText primary="COMPLETED" />
         </ListItemButton>
       </List>
       
@@ -170,7 +181,7 @@ const TopAppBar = ({
           onClick={() => setSortBy('dueDate')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="Due Date" />
+          <ListItemText primary="DUE DATE" />
         </ListItemButton>
         
         <ListItemButton 
@@ -178,7 +189,7 @@ const TopAppBar = ({
           onClick={() => setSortBy('startDate')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="Start Date" />
+          <ListItemText primary="START DATE" />
         </ListItemButton>
         
         <ListItemButton 
@@ -186,7 +197,7 @@ const TopAppBar = ({
           onClick={() => setSortBy('priority')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="Priority" />
+          <ListItemText primary="PRIORITY" />
         </ListItemButton>
         
         <ListItemButton 
@@ -194,7 +205,7 @@ const TopAppBar = ({
           onClick={() => setSortBy('progress')}
           sx={{ pl: 4 }}
         >
-          <ListItemText primary="Progress" />
+          <ListItemText primary="PROGRESS" />
         </ListItemButton>
       </List>
     </Box>
@@ -202,7 +213,11 @@ const TopAppBar = ({
 
   return (
     <>
-      <AppBar position="sticky">
+      <AppBar position="sticky" sx={{ 
+        backgroundColor: 'white',
+        color: 'text.primary',
+        boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
+      }}>
         <Toolbar>
           <Typography 
             variant="h6" 
@@ -218,32 +233,47 @@ const TopAppBar = ({
             }}
             onClick={handleHomeClick}
           >
-            <HomeIcon sx={{ mr: 1 }} />
-            Task Manager
+            <HomeIcon sx={{ mr: 1, color: categoryColors.home }} />
+            <Box 
+              component="span"
+              sx={{
+                background: 'linear-gradient(45deg, #4F46E5 0%, #7C3AED 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 'bold'
+              }}
+            >
+              Task Manager
+            </Box>
           </Typography>
           
           {isMobile ? (
-            // Mobile view - menu button
             <Box>
               <IconButton 
                 color="inherit" 
                 edge="end" 
                 onClick={toggleDrawer(true)}
-                sx={{ mr: 1 }}
+                sx={{ mr: 1, color: 'text.primary' }}
               >
                 <MenuIcon />
               </IconButton>
               
               <IconButton 
-                color="inherit" 
+                color="primary" 
                 edge="end" 
                 onClick={() => setOpenTaskForm(true)}
+                sx={{
+                  backgroundColor: '#4F46E5',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: '#4338CA'
+                  }
+                }}
               >
                 <AddIcon />
               </IconButton>
             </Box>
           ) : (
-            // Desktop view - visible filters and controls
             <>
               <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
                 <FormControl variant="outlined" size="small" sx={{ minWidth: 120, mr: 1 }}>
@@ -252,11 +282,33 @@ const TopAppBar = ({
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
                     label="Category"
+                    sx={{
+                      '.MuiSelect-select': {
+                        display: 'flex',
+                        alignItems: 'center'
+                      }
+                    }}
                   >
-                    <MenuItem value="all">All</MenuItem>
+                    <MenuItem value="all">All Categories</MenuItem>
                     {categories.map(category => (
-                      <MenuItem key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      <MenuItem 
+                        key={category} 
+                        value={category}
+                        sx={{
+                          borderLeft: `4px solid ${categoryColors[category] || categoryColors.default}`,
+                          my: 0.5
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{
+                            width: 10,
+                            height: 10,
+                            backgroundColor: categoryColors[category] || categoryColors.default,
+                            borderRadius: '50%',
+                            mr: 1.5
+                          }} />
+                          {category.charAt(0).toUpperCase() + category.slice(1)}
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
@@ -292,10 +344,16 @@ const TopAppBar = ({
               
               <Button 
                 variant="contained" 
-                color="secondary" 
                 startIcon={<AddIcon />}
                 onClick={() => setOpenTaskForm(true)}
-                sx={{ ml: 1 }}
+                sx={{ 
+                  ml: 1,
+                  background: 'linear-gradient(45deg, #4F46E5 0%, #7C3AED 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #4338CA 0%, #6D28D9 100%)'
+                  },
+                  boxShadow: '0 2px 5px rgba(79, 70, 229, 0.3)'
+                }}
               >
                 Add Task
               </Button>
@@ -304,18 +362,25 @@ const TopAppBar = ({
         </Toolbar>
       </AppBar>
       
-      {/* Drawer for mobile view */}
       <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={toggleDrawer(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            backgroundColor: '#F9FAFB'
+          }
+        }}
       >
         {filterDrawer}
       </Drawer>
       
-      <TaskFormDialog open={openTaskForm} onClose={() => setOpenTaskForm(false)} />
+      <TaskFormDialog 
+        open={openTaskForm} 
+        onClose={() => setOpenTaskForm(false)} 
+      />
     </>
   );
 };
 
-export default TopAppBar; 
+export default TopAppBar;
