@@ -13,7 +13,7 @@ import {
   Event as EventIcon
 } from '@mui/icons-material';
 import { toggleTaskCompletion, toggleSubtaskCompletion, deleteTask } from '../store/tasksSlice';
-import { priorityColors, categoryColors } from '../store/tasksSlice';
+import { priorityColors } from '../store/tasksSlice';
 import dayjs from 'dayjs';
 
 const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) => {
@@ -22,7 +22,6 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
   const [subtasksVisible, setSubtasksVisible] = useState(false);
   
   const priorityColor = priorityColors[task.priority]?.main || '#6B7280';
-  const categoryColor = categoryColors[task.category] || categoryColors.default;
 
   const handleToggleComplete = () => {
     dispatch(toggleTaskCompletion(task.id));
@@ -97,50 +96,33 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
                   variant="body2" 
                   sx={{ 
                     mt: 1,
-                    
+                    color: task.completed ? 'text.secondary' : '#595656de',
                     wordBreak: 'break-word',
                     whiteSpace: 'pre-wrap',
-                    overflowWrap: 'break-word',
-                    color: task.completed ? 'text.secondary' : 'text.primary'
+                    overflowWrap: 'break-word'
                   }}
                 >
                   {task.description}
                 </Typography>
               )}
               
-              {/* Colorful tags */}
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                <Chip 
-                  label={task.category} 
-                  size="small"
-                  sx={{ 
-                    backgroundColor: categoryColor,
-                    color: 'white',
-                    fontWeight: 'bold'
-                  }}
-                />
-                <Chip 
-                  label={task.priority} 
-                  size="small"
-                  sx={{ 
-                    backgroundColor: priorityColor,
-                    color: 'white'
-                  }}
-                />
+              <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
+                {task.startDate && (
+                  <Typography variant="caption" sx={{ display: 'flex', fontSize: '10px', alignItems: 'center' }}>
+                    <EventIcon fontSize="small" sx={{ mr: 0.5, color: '#0369A1' }} />
+                    Stat: {dayjs(task.startDate).format('MMM D, YY')}
+                  </Typography>
+                )}
+                
                 {task.dueDate && (
-                  <Chip
-                    icon={<EventIcon fontSize="small" />}
-                    label={dayjs(task.dueDate).format('MMM D')}
-                    size="small"
-                    sx={{
-                      backgroundColor: dayjs(task.dueDate).isBefore(dayjs()) && !task.completed 
-                        ? '#FEE2E2' 
-                        : '#ECFDF5',
+                  <Typography variant="caption" sx={{ display: 'flex', fontSize: '10px', alignItems: 'center' }}>
+                    <EventIcon fontSize="small" sx={{ mr: 0.5, 
                       color: dayjs(task.dueDate).isBefore(dayjs()) && !task.completed 
                         ? '#DC2626' 
-                        : '#059669'
-                    }}
-                  />
+                        : '#059669' 
+                    }} />
+                    Due: {dayjs(task.dueDate).format('MMM D, YY')}
+                  </Typography>
                 )}
               </Box>
             </Box>
@@ -151,7 +133,23 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
           </IconButton>
         </Box>
 
-        {/* Colorful progress bar */}
+        {/* Priority Chip */}
+        <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap',pl: 1.5 }}>
+          <Chip 
+            label={task.priority} 
+            size="small"
+            sx={{ 
+              pl: 1,
+              pr: 1,
+              backgroundColor: priorityColor,
+              color: 'white'
+            }}
+          />
+          
+        </Box>
+        
+
+        {/* Progress bar */}
         <Box sx={{ mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
             Progress: {Math.round(progress)}%
