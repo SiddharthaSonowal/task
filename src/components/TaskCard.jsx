@@ -53,12 +53,12 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
         maxWidth: { xs: '100%', sm: 340 },
         borderLeft: '5px solid',
         borderLeftColor: priorityColor,
-        background: `linear-gradient(to right, ${priorityColor}10, white)`,
+        background: `linear-gradient(to right, ${priorityColor}20, white)`,
         transition: 'all 0.3s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
           boxShadow: 3,
-          background: `linear-gradient(to right, ${priorityColor}20, white)`
+          background: `linear-gradient(to right, ${priorityColor}40, white)`
         },
         opacity: task.completed ? 0.7 : 1,
       }}
@@ -97,6 +97,7 @@ const TaskCard = ({ task, onEdit, index, onDragStart, onDragEnter, onDragEnd }) 
                   variant="body2" 
                   sx={{ 
                     mt: 1,
+                    
                     wordBreak: 'break-word',
                     whiteSpace: 'pre-wrap',
                     overflowWrap: 'break-word',

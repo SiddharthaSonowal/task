@@ -214,7 +214,7 @@ const TopAppBar = ({
   return (
     <>
       <AppBar position="sticky" sx={{ 
-        backgroundColor: 'white',
+        bgcolor: '#ffb3b3',
         color: 'text.primary',
         boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
       }}>

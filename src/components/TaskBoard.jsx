@@ -150,7 +150,7 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
   }
 
   return (
-    <Container maxWidth={isMobile ? false : 'xl'} sx={{ p: 2 }}>
+    <Container maxWidth={isMobile ? false : 'xl'} sx={{ p: 2 , bgcolor: '#fffff'}}>
       {isMobile ? (
         // Mobile view - vertical list
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -174,24 +174,21 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
             display: 'flex', 
             gap: 2, 
             overflowX: 'auto',
-            width: 'fit-content',
-            maxWidth: '100%',
             pb: 2,
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
             cursor: 'grab',
-            '&::-webkit-scrollbar': { height: '8px' },
-            '&::-webkit-scrollbar-track': { 
-              backgroundColor: '#f1f1f1', 
-              borderRadius: '10px' 
-            },
-            '&::-webkit-scrollbar-thumb': { 
-              backgroundColor: '#888', 
-              borderRadius: '10px' 
-            },
             '&:active': {
               cursor: 'grabbing'
-            }
+            },
+            '&::-webkit-scrollbar': { height: '8px' },
+            '&::-webkit-scrollbar-track': { backgroundColor: '#f1f1f1' },
+            '&::-webkit-scrollbar-thumb': { backgroundColor: '#888' }
           }}
           onMouseDown={handleMouseDown}
+          onTouchStart={(e) => e.preventDefault()}
         >
           {Object.entries(tasksByCategory).map(([category, categoryTasks]) => (
             <Box 
@@ -200,15 +197,12 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
                 minWidth: 350,
                 width: 350,
                 flexShrink: 0,
-                bgcolor: 'background.paper',
                 borderRadius: 2,
                 p: 2,
-                boxShadow: 1,
                 borderTop: `4px solid ${categoryColors[category] || categoryColors.default}`,
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: 3
                 }
               }}
             >

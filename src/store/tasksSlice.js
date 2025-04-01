@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 export const categoryColors = {
   work: '#FF6B6B',
   home: '#4ECDC4',
-  school: '#FFD166',
+  school: '#00ee23',
   fitness: '#06D6A0',
   shopping: '#A78BFA',
   default: '#E2E8F0'
