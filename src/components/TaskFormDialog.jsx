@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   Dialog, 
@@ -42,6 +42,29 @@ const TaskFormDialog = ({ open, onClose, editTask = null }) => {
   const [enableNotifications, setEnableNotifications] = useState(editTask?.notifications || false);
   const [subtasks, setSubtasks] = useState(editTask?.subtasks || []);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+  useEffect(() => {
+    if (editTask) {
+      setTitle(editTask.title);
+      setDescription(editTask.description || '');
+      setCategory(editTask.category || categories[0]);
+      setPriority(editTask.priority || priorities[0]);
+      setStartDate(editTask.startDate ? dayjs(editTask.startDate) : dayjs());
+      setDueDate(editTask.dueDate ? dayjs(editTask.dueDate) : dayjs().add(1, 'day'));
+      setEnableNotifications(Boolean(editTask.notifications));
+      setSubtasks(editTask.subtasks || []);
+    } else {
+      // Reset form for new task
+      setTitle('');
+      setDescription('');
+      setCategory(categories[0]);
+      setPriority(priorities[0]);
+      setStartDate(dayjs());
+      setDueDate(dayjs().add(1, 'day'));
+      setEnableNotifications(false);
+      setSubtasks([]);
+    }
+  }, [editTask, open, categories, priorities]);
   
   const handleSubmit = () => {
     const taskData = {
@@ -55,16 +78,18 @@ const TaskFormDialog = ({ open, onClose, editTask = null }) => {
       notifications: enableNotifications,
       subtasks,
       completed: editTask?.completed || false,
-      createdAt: editTask?.createdAt || new Date().toISOString(),
+      createdAt: editTask?.createdAt || new Date().toISOString()
     };
     
     if (editTask) {
-      dispatch(updateTask({ id: editTask.id, updatedTask: taskData }));
+      dispatch(updateTask({ 
+        id: editTask.id, 
+        updatedTask: taskData 
+      }));
     } else {
       dispatch(addTask(taskData));
     }
     
-    resetForm();
     onClose();
   };
   
@@ -214,14 +239,14 @@ const TaskFormDialog = ({ open, onClose, editTask = null }) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+      <Button onClick={onClose}>Cancel</Button>
         <Button 
-          onClick={handleSubmit} 
+          onClick={handleSubmit}
           variant="contained" 
           color="primary"
           disabled={!title.trim()}
         >
-          {editTask ? 'Update' : 'Create'}
+          {editTask ? 'Update Task' : 'Create Task'}
         </Button>
       </DialogActions>
     </Dialog>

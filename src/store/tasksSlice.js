@@ -1,5 +1,20 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+export const categoryColors = {
+  work: '#FF6B6B',
+  home: '#4ECDC4',
+  school: '#FFD166',
+  fitness: '#06D6A0',
+  shopping: '#A78BFA',
+  default: '#E2E8F0'
+};
+
+export const priorityColors = {
+  high: { main: '#EF4444', light: '#FEE2E2' },
+  medium: { main: '#F59E0B', light: '#FEF3C7' },
+  low: { main: '#10B981', light: '#D1FAE5' }
+};
+
 // Load tasks from local storage if available
 const loadTasksFromStorage = () => {
   try {

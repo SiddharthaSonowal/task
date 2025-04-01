@@ -1,108 +1,90 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { 
+  Box, 
+  Typography, 
+  useMediaQuery, 
+  useTheme, 
+  Container,
+  LinearProgress
+} from '@mui/material';
 import TaskCard from './TaskCard';
 import TaskFormDialog from './TaskFormDialog';
 import { updateTask } from '../store/tasksSlice';
+import { categoryColors } from '../store/tasksSlice';
 
 const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
-  const tasks = useSelector(state => state.tasks.tasks);
   const theme = useTheme();
   const dispatch = useDispatch();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const tasks = useSelector(state => state.tasks.tasks);
+  
+  // State management
   const [editingTask, setEditingTask] = useState(null);
   const [draggedTaskIndex, setDraggedTaskIndex] = useState(null);
   const [dragOverTaskIndex, setDragOverTaskIndex] = useState(null);
   const horizontalScrollRef = useRef(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const [startX, setStartX] = useState(0);
-  
-  // Filter and sort tasks
-  const filteredTasks = tasks.filter(task => {
-    // Filter by category
-    if (filterCategory !== 'all' && task.category !== filterCategory) {
-      return false;
-    }
-    
-    // Filter by status
-    if (filterStatus === 'completed' && !task.completed) {
-      return false;
-    }
-    if (filterStatus === 'active' && task.completed) {
-      return false;
-    }
-    
-    return true;
-  });
-  
-  // Sort tasks
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    switch (sortBy) {
-      case 'dueDate':
-        return new Date(a.dueDate) - new Date(b.dueDate);
-      case 'startDate':
-        return new Date(a.startDate) - new Date(b.startDate);
-      case 'priority': {
-        const priorityOrder = { high: 0, medium: 1, low: 2 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
+
+  // Filter, sort and group tasks
+  const { filteredTasks, tasksByCategory } = useMemo(() => {
+    const filtered = tasks.filter(task => {
+      if (filterCategory !== 'all' && task.category !== filterCategory) return false;
+      if (filterStatus === 'completed' && !task.completed) return false;
+      if (filterStatus === 'active' && task.completed) return false;
+      return true;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'dueDate': return new Date(a.dueDate) - new Date(b.dueDate);
+        case 'startDate': return new Date(a.startDate) - new Date(b.startDate);
+        case 'priority': {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
+        case 'progress': {
+          const getProgress = (task) => {
+            if (!task.subtasks || task.subtasks.length === 0) return task.completed ? 100 : 0;
+            return (task.subtasks.filter(st => st.completed).length / task.subtasks.length) * 100;
+          };
+          return getProgress(b) - getProgress(a);
+        }
+        default: return 0;
       }
-      case 'progress': {
-        const getProgress = (task) => {
-          if (!task.subtasks || task.subtasks.length === 0) return task.completed ? 100 : 0;
-          return (task.subtasks.filter(st => st.completed).length / task.subtasks.length) * 100;
-        };
-        return getProgress(b) - getProgress(a);
-      }
-      default:
-        return 0;
-    }
-  });
-  
-  // Group tasks by category if on desktop
-  const tasksByCategory = !isMobile 
-    ? sortedTasks.reduce((acc, task) => {
-        if (!acc[task.category]) acc[task.category] = [];
-        acc[task.category].push(task);
-        return acc;
-      }, {})
-    : null;
-  
-  const handleEditTask = (task) => {
-    setEditingTask(task);
-  };
-  
+    });
+
+    const grouped = !isMobile 
+      ? sorted.reduce((acc, task) => {
+          if (!acc[task.category]) acc[task.category] = [];
+          acc[task.category].push(task);
+          return acc;
+        }, {})
+      : null;
+
+    return { filteredTasks: sorted, tasksByCategory: grouped };
+  }, [tasks, filterCategory, filterStatus, sortBy, isMobile]);
+
   // Drag and drop handlers
   const handleDragStart = (e, index) => {
     setDraggedTaskIndex(index);
-    // Make the drag image transparent
-    setTimeout(() => {
-      e.target.style.opacity = 0.5;
-    }, 0);
+    setTimeout(() => { e.target.style.opacity = 0.5; }, 0);
   };
-  
+
   const handleDragEnter = (e, index) => {
     e.preventDefault();
-    if (draggedTaskIndex !== index) {
-      setDragOverTaskIndex(index);
-    }
+    if (draggedTaskIndex !== index) setDragOverTaskIndex(index);
   };
-  
+
   const handleDragEnd = (e) => {
     e.target.style.opacity = 1;
     
     if (draggedTaskIndex !== null && dragOverTaskIndex !== null) {
-      // Create a new array with reordered tasks
-      const newTasks = [...sortedTasks];
-      const draggedTask = newTasks[draggedTaskIndex];
-      
-      // Remove dragged item
-      newTasks.splice(draggedTaskIndex, 1);
-      
-      // Add it at the new position
+      const newTasks = [...filteredTasks];
+      const [draggedTask] = newTasks.splice(draggedTaskIndex, 1);
       newTasks.splice(dragOverTaskIndex, 0, draggedTask);
       
-      // Update the order in Redux store - this would need updating in the slice
-      // For now, this just updates the category if we're dragging between categories
       if (!isMobile && newTasks[dragOverTaskIndex].category !== draggedTask.category) {
         dispatch(updateTask({
           id: draggedTask.id,
@@ -114,56 +96,69 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
     setDraggedTaskIndex(null);
     setDragOverTaskIndex(null);
   };
-  
-  // Horizontal scroll with mouse hold
+
+  // Horizontal scroll handlers
   const handleMouseDown = (e) => {
     if (!horizontalScrollRef.current || isMobile) return;
     setIsScrolling(true);
     setStartX(e.pageX - horizontalScrollRef.current.offsetLeft);
     horizontalScrollRef.current.style.cursor = 'grabbing';
   };
-  
+
   const handleMouseMove = (e) => {
     if (!isScrolling || !horizontalScrollRef.current) return;
     const x = e.pageX - horizontalScrollRef.current.offsetLeft;
-    const scroll = x - startX;
-    horizontalScrollRef.current.scrollLeft -= scroll;
+    horizontalScrollRef.current.scrollLeft -= (x - startX);
     setStartX(x);
   };
-  
+
   const handleMouseUp = () => {
     setIsScrolling(false);
-    if (horizontalScrollRef.current) {
-      horizontalScrollRef.current.style.cursor = 'grab';
-    }
+    if (horizontalScrollRef.current) horizontalScrollRef.current.style.cursor = 'grab';
   };
-  
+
   useEffect(() => {
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousemove', handleMouseMove);
-    
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousemove', handleMouseMove);
     };
   }, [isScrolling, startX]);
 
+  // Empty state
+  if (filteredTasks.length === 0) {
+    return (
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Typography variant="h6" color="text.secondary">
+          No tasks found. Add a new task to get started!
+        </Typography>
+        <LinearProgress 
+          sx={{ 
+            mt: 2, 
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: '#E5E7EB',
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: '#4F46E5',
+              borderRadius: 4
+            }
+          }} 
+        />
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ p: 2 }}>
+    <Container maxWidth={isMobile ? false : 'xl'} sx={{ p: 2 }}>
       {isMobile ? (
-        // Mobile view - vertical scrolling with responsive cards
+        // Mobile view - vertical list
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {sortedTasks.length === 0 && (
-            <Typography variant="h6" align="center" sx={{ my: 4 }}>
-              No tasks found. Add a new task to get started!
-            </Typography>
-          )}
-          
-          {sortedTasks.map((task, index) => (
+          {filteredTasks.map((task, index) => (
             <TaskCard 
               key={task.id} 
               task={task} 
-              onEdit={handleEditTask}
+              onEdit={setEditingTask}
               index={index}
               onDragStart={handleDragStart}
               onDragEnter={handleDragEnter}
@@ -172,57 +167,72 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
           ))}
         </Box>
       ) : (
-        // Desktop view - horizontal scrolling by category with drag and hold
+        // Desktop view - horizontal categories
         <Box 
           ref={horizontalScrollRef}
           sx={{ 
             display: 'flex', 
             gap: 2, 
-            overflowX: 'auto', 
+            overflowX: 'auto',
+            width: 'fit-content',
+            maxWidth: '100%',
             pb: 2,
             cursor: 'grab',
-            '&::-webkit-scrollbar': {
-              height: '8px',
+            '&::-webkit-scrollbar': { height: '8px' },
+            '&::-webkit-scrollbar-track': { 
+              backgroundColor: '#f1f1f1', 
+              borderRadius: '10px' 
             },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: '#f1f1f1',
-              borderRadius: '10px',
+            '&::-webkit-scrollbar-thumb': { 
+              backgroundColor: '#888', 
+              borderRadius: '10px' 
             },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: '#888',
-              borderRadius: '10px',
-            },
+            '&:active': {
+              cursor: 'grabbing'
+            }
           }}
           onMouseDown={handleMouseDown}
         >
-          {Object.keys(tasksByCategory || {}).length === 0 && (
-            <Typography variant="h6" align="center" sx={{ my: 4, width: '100%' }}>
-              No tasks found. Add a new task to get started!
-            </Typography>
-          )}
-          
-          {Object.entries(tasksByCategory || {}).map(([category, categoryTasks]) => (
+          {Object.entries(tasksByCategory).map(([category, categoryTasks]) => (
             <Box 
               key={category}
               sx={{ 
-                minWidth: '250px',
-                maxWidth: '350px',
+                minWidth: 350,
+                width: 350,
+                flexShrink: 0,
                 bgcolor: 'background.paper',
-                borderRadius: 1,
+                borderRadius: 2,
                 p: 2,
+                boxShadow: 1,
+                borderTop: `4px solid ${categoryColors[category] || categoryColors.default}`,
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 3
+                }
               }}
             >
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  mb: 2, 
-                  pb: 1, 
-                  borderBottom: '1px solid', 
-                  borderColor: 'divider',
-                  textTransform: 'capitalize'
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 2,
+                  pb: 1,
+                  textTransform: 'uppercase',
+                  color: categoryColors[category] || categoryColors.default,
+                  backgroundColor: `${categoryColors[category]}20` || `${categoryColors.default}20`,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
                 }}
               >
                 {category}
+                <Typography variant="caption" sx={{ color: 'inherit' }}>
+                  {categoryTasks.length} {categoryTasks.length === 1 ? 'task' : 'tasks'}
+                </Typography>
               </Typography>
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -230,7 +240,7 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
                   <TaskCard 
                     key={task.id} 
                     task={task} 
-                    onEdit={handleEditTask}
+                    onEdit={setEditingTask}
                     index={index}
                     onDragStart={handleDragStart}
                     onDragEnter={handleDragEnter}
@@ -243,15 +253,13 @@ const TaskBoard = ({ filterCategory, filterStatus, sortBy }) => {
         </Box>
       )}
       
-      {editingTask && (
-        <TaskFormDialog 
-          open={Boolean(editingTask)} 
-          onClose={() => setEditingTask(null)} 
-          editTask={editingTask} 
-        />
-      )}
-    </Box>
+      <TaskFormDialog 
+        open={Boolean(editingTask)} 
+        onClose={() => setEditingTask(null)} 
+        editTask={editingTask} 
+      />
+    </Container>
   );
 };
 
-export default TaskBoard; 
+export default TaskBoard;
